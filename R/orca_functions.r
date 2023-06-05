@@ -351,6 +351,8 @@ get_orca_screener_clean <- function(token, min_date_time = "2022-01-01 00:00:00"
   cities <- city_info()
   screener <- left_join(screener, zip_info, by="zipcode")
   screener <- left_join(screener, cities, by="location")
+  screener <- filter(screener, is.na(bot_check) | bot_check == 3)
+  screener <- filter(screener, is.na(bot_pic_answer) | bot_pic_answer == 4)
   screener <- mutate(screener,
                      rural = ifelse(is.na(population) & !is.na(location), "Y",
                                     ifelse(population >= 50000, "N",
