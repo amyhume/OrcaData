@@ -11,7 +11,7 @@ url <- 'https://redcap.nyu.edu/api/'
 #' @return A data frame with the retrieved data
 #' @export
 
-get_orca_data <- function(token = token, form = form, raw_v_label = 'raw', form_complete = F) {
+get_orca_data <- function(token = token, form = form, raw_v_label = 'raw', form_complete = T) {
   if (form_complete) {
     record_filter = paste("[", form, "_complete]=2", sep = "")
   } else {
@@ -41,6 +41,7 @@ get_orca_data <- function(token = token, form = form, raw_v_label = 'raw', form_
   df[df == -999] = NA
   df[df == 999] = NA
   df[df == 9999] = NA # NOTE values can be changed, or new ones added, to account for different missing data flags
+  df <- dplyr::filter(df, !stringr::str_detect(record_id, "TEST"))
   return (df)
 }
 
@@ -75,8 +76,9 @@ get_orca_field <- function(token = token, field=field, raw_v_label = 'raw') {
   df[df == -999] = NA
   df[df == 999] = NA
   df[df == 9999] = NA
-  df <- dplyr::select(df, record_id, field)
+  df <- dplyr::select(df, record_id, redcap_event_name, field)
   df <- df[!is.na(df[[field]]),]
+  df <- dplyr::filter(df, !stringr::str_detect(record_id, "TEST"))
   return (df)
 }
 
@@ -155,8 +157,9 @@ get_orca_chaos <- function(token) {
 #' @param token Unique REDCap token ID
 #' @return A data frame for the completed surveys
 #' @export
-get_orca_epds <- function(token) {
+get_orca_epds <- function(token, timepoint = 'orca_visit_1_arm_1') {
   epds = get_orca_data(token, "epds", form_complete = T)
+  epds <- dplyr::filter(epds, redcap_event_name == timepoint)
   epds$epds_1_v2 = 3 - epds$epds_1_v2
   epds$epds_2_v2 = 3 - epds$epds_2_v2
   epds$epds_all = epds$epds_1_v2 + epds$epds_2_v2 + epds$epds_3_v2 + epds$epds_4_v2 + epds$epds_5_v2 +
@@ -195,10 +198,11 @@ get_orca_md <- function(token) {
 #' @param token Unique REDCap token ID
 #' @return A data frame with the calculated social support score for each ID
 #' @export
-get_orca_social_support <- function(token) {
+get_orca_social_support <- function(token, timepoint = 'orca_visit_1_arm_1') {
   ss <- get_orca_data(token, "social_support", form_complete = T)
+  ss <- dplyr::filter(ss, redcap_event_name == timepoint)
   ss_columns <- dplyr::select(ss, support3:support10)
-  ss$social_support <- rowSums(ss_columns)
+  ss$social_support <- rowSums(ss_columns, na.rm=T)
   ss <- dplyr::select(ss, record_id, social_support)
   return (ss)
 }
