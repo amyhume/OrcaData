@@ -462,7 +462,10 @@ screen_fraudulence <- function(data) {
   return(list(data = data, ineligible_ages = ineligible_ages, duplicate_contacts = duplicate_contacts))
 }
 
-#Pulls US zipcode database
+#' @title Pulls US zipcode database
+#' @description Loads a data base of US zipcodes and information (latitude, longitude, population)
+#' @return A data frame with every us zipcode and information
+#' @export
 zip_data <- function() {
   data_path <- system.file("data", "zip_code_database.csv", package = "OrcaData")
   data <- read.csv(data_path, na.strings = "")
