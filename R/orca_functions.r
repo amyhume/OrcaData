@@ -468,5 +468,15 @@ zip_data <- function() {
   data <- read.csv(data_path, na.strings = "")
   data$zipcode <- as.character(data$zipcode)
   data$zipcode <- sprintf("%05s", data$zipcode)
+  data <- dplyr::mutate(data,
+                        town_or_city = ifelse(zipcode >= 10001 & zipcode <= 10282, "New York",
+                                          ifelse(zipcode >= 10301 & zipcode <= 10314, "New York",
+                                                 ifelse(zipcode >= 10451 & zipcode <= 10475, "New York",
+                                                        ifelse(zipcode >= 11004 & zipcode <= 11109, "New York",
+                                                               ifelse(zipcode >= 11351 & zipcode <= 11697, "New York",
+                                                                      ifelse(zipcode >= 11201 & zipcode <= 11256, "New York", primary_city)))))))
+  data <- dplyr::select(data,
+                        zipcode, town_or_city, state, county, timezone, latitude, longitude, irs_estimated_population)
   return(data)
 }
+
