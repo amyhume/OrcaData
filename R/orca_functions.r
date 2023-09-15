@@ -464,10 +464,9 @@ screen_fraudulence <- function(data) {
 
 #Pulls US zipcode database
 zip_data <- function() {
-  data_path <- system.file("data", "zipcode_database.csv", package = "OrcaData")
+  data_path <- system.file("data", "zip_code_database.csv", package = "OrcaData")
   data <- read.csv(data_path, na.strings = "")
   zipcode_data$zipcode <- as.character(zipcode_data$zipcode)
   zipcode_data$zipcode <- sprintf("%05s", zipcode_data$zipcode)
   return(data)
 }
-
