@@ -461,3 +461,13 @@ screen_fraudulence <- function(data) {
     select(-age_ineligible, -duplicate_email, -duplicate_phone, -num_name_flag)
   return(list(data = data, ineligible_ages = ineligible_ages, duplicate_contacts = duplicate_contacts))
 }
+
+#Pulls US zipcode database
+zip_data <- function() {
+  data_path <- system.file("data", "zipcode_database.csv", package = "OrcaData")
+  data <- read.csv(data_path, na.strings = "")
+  zipcode_data$zipcode <- as.character(zipcode_data$zipcode)
+  zipcode_data$zipcode <- sprintf("%05s", zipcode_data$zipcode)
+  return(data)
+}
+
