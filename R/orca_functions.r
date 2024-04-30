@@ -186,8 +186,8 @@ get_orca_epds <- function(token, timepoint = 'orca_visit_1_arm_1') {
 get_orca_md <- function(token) {
   md <- get_orca_data(token, "material_deprivation", form_complete = T)
   md_columns <- dplyr::select(md, md_snap:md_overtime)
-  md$material_deprivation <- rowSums(md_columns)
-  md <- dplyr::select(md, record_id, md_score)
+  md$md_score <- rowSums(md_columns)
+  md <- dplyr::select(md, record_id, material_deprivation_timestamp, md_score)
   return (md)
 }
 
