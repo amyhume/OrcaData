@@ -483,3 +483,50 @@ zip_data <- function() {
   return(data)
 }
 
+#' @title Process IBQ Data for Visit 2
+#' @description This function will download and return the mean scores for the IBQ subscales (surgency, negative affect, effortful control).
+#' @param token Unique REDCap token ID
+#' @return A data frame for the completed surveys
+#' @export
+get_orca_ibq <- function(token) {
+  ibq <- get_orca_data(token, form = 'infant_behavior_questionnaire_vsf')
+  #reversing item 11
+  ibq$ibq11r <- (8-ibq$ibq11)
+  ibq$ibq_sur <- rowMeans(ibq[, c("ibq1", "ibq2", "ibq7", "ibq8", "ibq13", "ibq14", "ibq15", 
+                                  "ibq20", "ibq21", "ibq26", "ibq27", "ibq36", "ibq37")], na.rm = TRUE)
+  ibq$ibq_neg <- rowMeans(ibq[, c("ibq3", "ibq4", "ibq9", "ibq10", "ibq16", "ibq17", "ibq22", 
+                                  "ibq23", "ibq28", "ibq29", "ibq32", "ibq33")], na.rm = TRUE)
+  ibq$ibq_ec <- rowMeans(ibq[, c("ibq5", "ibq6", "ibq11r", "ibq12", "ibq18", "ibq19", "ibq24", 
+                                 "ibq25", "ibq30", "ibq31", "ibq34", "ibq35")], na.rm = TRUE)
+  
+  
+  ibq <- ibq[, c("record_id", "infant_behavior_questionnaire_vsf_timestamp", "ibq_sur", "ibq_neg", "ibq_ec")]
+  
+  return(ibq)
+}
+
+#' @title Process Early Executive Functions Questionnaire Data for Visit 2
+#' @description This function will download and return the mean scores for the EEFQ subscales (ic, fx, wm, rg).
+#' @param token Unique REDCap token ID
+#' @return A data frame for the completed surveys
+#' @export
+get_orca_eefq <- function(token) {
+  eefq <- get_orca_data(token, form = "early_executive_functions_questionnaire")
+  
+  reverse <- c("eefq3", "eefq9", "eefq11", "eefq16", "eefq22", "eefq23", "eefq24", "eefq25", "eefq26", "eefq27", "eefq28")
+  eefq[reverse] <- lapply(eefq[reverse], function(x) 8 - x)
+  
+  ic <- c("eefq1", "eefq2", "eefq3", "eefq4", "eefq5", "eefq6", "eefq7")
+  fx <- c("eefq8", "eefq9", "eefq10", "eefq11", "eefq12", "eefq13", "eefq14")
+  wm <- c("eefq15", "eefq16", "eefq17", "eefq18", "eefq19", "eefq20")
+  rg <- c("eefq21", "eefq22", "eefq23", "eefq24", "eefq25", "eefq26", "eefq27", "eefq28")
+  
+  eefq$eefq_ic <- rowMeans(eefq[, ic], na.rm=T)
+  eefq$eefq_fx <- rowMeans(eefq[, fx], na.rm=T)
+  eefq$eefq_wm <- rowMeans(eefq[, wm], na.rm=T)
+  eefq$eefq_rg <- rowMeans(eefq[, rg], na.rm=T)
+  
+  eefq <- eefq[, c("record_id", "early_executive_functions_questionnaire_timestamp", "eefq_ic", "eefq_fx", "eefq_wm", "eefq_rg")]
+  return(eefq)
+  
+}
