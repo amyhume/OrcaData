@@ -530,3 +530,35 @@ get_orca_eefq <- function(token) {
   return(eefq)
   
 }
+
+#' @title Calculates ITN
+#' @description calculates ITN based on poverty threshold for number of people in household and annual income
+#' @param data the data frame to act on
+#' @return A data frame with ITN
+#' @export
+calculate_itn <- function(data) {
+  #creating poverty guideline data base (2024)
+  poverty_guidelines <- data.frame(
+    household_n = c(1,2,3,4,5,6,7,8),
+    income_threshold = c(15060,20440,25820,31200,36580,41960,47340,52720)
+  )
+  data$annual_income <- as.numeric(data$annual_income)
+  data <- dplyr::mutate(data, itn = NA)
+  for (row in 1:nrow(data)) {
+    total_household = (data$children_home[row] + data$adults_home[row])
+    if (!is.na(total_household) & total_household <= 8) {
+      index <- which(poverty_guidelines$household_n == total_household)
+    } else if (is.na(total_household)) {
+      index = NA
+    } else {
+      index = 8
+    }
+    
+    if (!is.na(index)) {
+      threshold = poverty_guidelines$income_threshold[index]
+      data$itn[row] <- data$annual_income[row] / threshold
+    } 
+  }
+  return(data)
+}
+
