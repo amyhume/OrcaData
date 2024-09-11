@@ -4,10 +4,14 @@
 \alias{get_orca_chaos}
 \title{Process CHAOS data}
 \usage{
-get_orca_chaos(token)
+get_orca_chaos(token, timepoint = "orca_visit_1_arm_1", timestamp = T)
 }
 \arguments{
 \item{token}{Unique REDCap token ID}
+
+\item{timepoint}{Redcap event name for timepoint}
+
+\item{timestamp}{Boolean - whether to include survey timestamps}
 }
 \value{
 A data frame for the completed surveys

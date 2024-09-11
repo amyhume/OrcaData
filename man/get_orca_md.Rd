@@ -4,10 +4,12 @@
 \alias{get_orca_md}
 \title{Process Material Deprivation data}
 \usage{
-get_orca_md(token)
+get_orca_md(token, timestamp = T)
 }
 \arguments{
 \item{token}{Unique REDCap token ID}
+
+\item{timestamp}{Boolean - whether to include survey timestamps}
 }
 \value{
 A data frame with the calculated md score for each ID

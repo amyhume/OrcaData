@@ -4,10 +4,14 @@
 \alias{get_orca_social_support}
 \title{Process Social Support data}
 \usage{
-get_orca_social_support(token, timepoint = "orca_visit_1_arm_1")
+get_orca_social_support(token, timepoint = "orca_visit_1_arm_1", timestamp = T)
 }
 \arguments{
 \item{token}{Unique REDCap token ID}
+
+\item{timepoint}{Redcap event name for timepoint}
+
+\item{timestamp}{Boolean - whether to include survey timestamps}
 }
 \value{
 A data frame with the calculated social support score for each ID

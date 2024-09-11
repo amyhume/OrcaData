@@ -4,10 +4,12 @@
 \alias{get_orca_eefq}
 \title{Process Early Executive Functions Questionnaire Data for Visit 2}
 \usage{
-get_orca_eefq(token)
+get_orca_eefq(token, timestamp = T)
 }
 \arguments{
 \item{token}{Unique REDCap token ID}
+
+\item{timestamp}{Boolean for whether to include survey timestamp}
 }
 \value{
 A data frame for the completed surveys

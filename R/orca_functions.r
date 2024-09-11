@@ -137,16 +137,25 @@ get_orca_demo <- function(token) {
 #' @description This function will download and compute total scores for the CHAOS scale
 #'
 #' @param token Unique REDCap token ID
+#' @param timepoint Redcap event name for timepoint
+#' @param timestamp Boolean - whether to include survey timestamps
 #' @return A data frame for the completed surveys
 #' @export
-get_orca_chaos <- function(token) {
+get_orca_chaos <- function(token, timepoint = 'orca_visit_1_arm_1', timestamp=T) {
   chaos = get_orca_data(token, "chaos", form_complete = T)
+  chaos = dplyr::filter(chaos, redcap_event_name == timepoint)
   pos_items <- c("chaos_commotion","chaos_findthings","chaos_ontop","chaos_interrupt","chaos_relax", "chaos_calm")
   chaos <- dplyr::mutate_at(chaos, dplyr::vars(all_of(pos_items)), ~ abs(5 - .))
   chaos$total_score =  rowMeans(chaos[,c("chaos_commotion", "chaos_findthings", "chaos_rushed", "chaos_ontop",
                                          "chaos_late", "chaos_zoo", "chaos_interrupt", "chaos_fuss", "chaos_plans",
                                          "chaos_think", "chaos_arguement", "chaos_relax", "chaos_telephone","chaos_calm")], na.rm=T)
-  chaos = chaos[,c("record_id", "chaos_timestamp", "total_score")]
+  
+  
+  if (timestamp) {
+    chaos = chaos[,c("record_id", "chaos_timestamp", "total_score")]
+  } else if (!timestamp) {
+    chaos = chaos[,c("record_id", "total_score")]
+  }
   return (chaos)
 }
 
@@ -155,9 +164,11 @@ get_orca_chaos <- function(token) {
 #' @description This function will download and return the totalsummed scores for the EPDS. Only total scores, and not cutoff values, are returned.
 #'
 #' @param token Unique REDCap token ID
+#' @param timepoint Redcap event name for timepoint
+#' @param timestamp Boolean - whether to include survey timestamps
 #' @return A data frame for the completed surveys
 #' @export
-get_orca_epds <- function(token, timepoint = 'orca_visit_1_arm_1') {
+get_orca_epds <- function(token, timepoint = 'orca_visit_1_arm_1', timestamp=T) {
   epds = get_orca_data(token, "epds", form_complete = T)
   epds <- dplyr::filter(epds, redcap_event_name == timepoint)
   epds$epds_1_v2 = 3 - epds$epds_1_v2
@@ -171,7 +182,13 @@ get_orca_epds <- function(token, timepoint = 'orca_visit_1_arm_1') {
   epds$epds_anx = epds$epds_4_v2 + epds$epds_5_v2 + epds$epds_6_v2
   
   #epds$epds_avg = rowSums(epds[,5:14], na.rm=T)
-  epds = epds[,c("record_id", "epds_all", "epds_dep", "epds_anx")]
+  
+  if (timestamp) {
+    epds = epds[,c("record_id", "epds_timestamp", "epds_all", "epds_dep", "epds_anx")]
+  } else if (!timestamp) {
+    epds = epds[,c("record_id", "epds_all", "epds_dep", "epds_anx")]
+  }
+  
   return (epds)
 }
 
@@ -181,13 +198,20 @@ get_orca_epds <- function(token, timepoint = 'orca_visit_1_arm_1') {
 #' @description  This function will download and return the total summed scores 
 #'
 #' @param token Unique REDCap token ID
+#' @param timestamp Boolean - whether to include survey timestamps
 #' @return A data frame with the calculated md score for each ID
 #' @export
-get_orca_md <- function(token) {
+get_orca_md <- function(token, timestamp = T) {
   md <- get_orca_data(token, "material_deprivation", form_complete = T)
   md_columns <- dplyr::select(md, md_snap:md_overtime)
   md$md_score <- rowSums(md_columns)
-  md <- dplyr::select(md, record_id, material_deprivation_timestamp, md_score)
+  
+  if (timestamp) {
+    md <- dplyr::select(md, record_id, material_deprivation_timestamp, md_score)
+  } else if (!timestamp) {
+    md <- dplyr::select(md, record_id, md_score)
+  }
+  
   return (md)
 }
 
@@ -196,16 +220,26 @@ get_orca_md <- function(token) {
 #' @description This function will download and return the total summed scores 
 #'
 #' @param token Unique REDCap token ID
+#' @param timepoint Redcap event name for timepoint
+#' @param timestamp Boolean - whether to include survey timestamps
 #' @return A data frame with the calculated social support score for each ID
 #' @export
-get_orca_social_support <- function(token, timepoint = 'orca_visit_1_arm_1') {
+get_orca_social_support <- function(token, timepoint = 'orca_visit_1_arm_1', timestamp=T) {
   ss <- get_orca_data(token, "social_support", form_complete = T)
   ss <- dplyr::filter(ss, redcap_event_name == timepoint)
   ss_columns <- dplyr::select(ss, support3:support10)
   ss$social_support <- rowSums(ss_columns, na.rm=T)
   ss <- dplyr::select(ss, record_id, social_support)
+  
+  if (timestamp) {
+    ss <- dplyr::select(ss, record_id, social_support_timestamp, social_support)
+  } else if (!timestamp) {
+    ss <- dplyr::select(ss, record_id, social_support)
+  }
+  
   return (ss)
 }
+
 
 #ORCA SCREENER FUNCTIONS
 
@@ -486,9 +520,10 @@ zip_data <- function() {
 #' @title Process IBQ Data for Visit 2
 #' @description This function will download and return the mean scores for the IBQ subscales (surgency, negative affect, effortful control).
 #' @param token Unique REDCap token ID
+#' @param timestamp Boolean for whether to include survey timestamp
 #' @return A data frame for the completed surveys
 #' @export
-get_orca_ibq <- function(token) {
+get_orca_ibq <- function(token, timestamp=T) {
   ibq <- get_orca_data(token, form = 'infant_behavior_questionnaire_vsf')
   #reversing item 11
   ibq$ibq11r <- (8-ibq$ibq11)
@@ -499,8 +534,11 @@ get_orca_ibq <- function(token) {
   ibq$ibq_ec <- rowMeans(ibq[, c("ibq5", "ibq6", "ibq11r", "ibq12", "ibq18", "ibq19", "ibq24", 
                                  "ibq25", "ibq30", "ibq31", "ibq34", "ibq35")], na.rm = TRUE)
   
-  
-  ibq <- ibq[, c("record_id", "infant_behavior_questionnaire_vsf_timestamp", "ibq_sur", "ibq_neg", "ibq_ec")]
+  if (timestamp) {
+    ibq <- ibq[, c("record_id", "infant_behavior_questionnaire_vsf_timestamp", "ibq_sur", "ibq_neg", "ibq_ec")]
+  } else if (!timestamp) {
+    ibq <- ibq[, c("record_id", "ibq_sur", "ibq_neg", "ibq_ec")]
+  }
   
   return(ibq)
 }
@@ -508,9 +546,10 @@ get_orca_ibq <- function(token) {
 #' @title Process Early Executive Functions Questionnaire Data for Visit 2
 #' @description This function will download and return the mean scores for the EEFQ subscales (ic, fx, wm, rg).
 #' @param token Unique REDCap token ID
+#' @param timestamp Boolean for whether to include survey timestamp
 #' @return A data frame for the completed surveys
 #' @export
-get_orca_eefq <- function(token) {
+get_orca_eefq <- function(token, timestamp=T) {
   eefq <- get_orca_data(token, form = "early_executive_functions_questionnaire")
   
   reverse <- c("eefq3", "eefq9", "eefq11", "eefq16", "eefq22", "eefq23", "eefq24", "eefq25", "eefq26", "eefq27", "eefq28")
@@ -526,7 +565,12 @@ get_orca_eefq <- function(token) {
   eefq$eefq_wm <- rowMeans(eefq[, wm], na.rm=T)
   eefq$eefq_rg <- rowMeans(eefq[, rg], na.rm=T)
   
-  eefq <- eefq[, c("record_id", "early_executive_functions_questionnaire_timestamp", "eefq_ic", "eefq_fx", "eefq_wm", "eefq_rg")]
+  if (timestamp) {
+    eefq <- eefq[, c("record_id", "early_executive_functions_questionnaire_timestamp", "eefq_ic", "eefq_fx", "eefq_wm", "eefq_rg")]
+  } else if (!timestamp) {
+    eefq <- eefq[, c("record_id", "eefq_ic", "eefq_fx", "eefq_wm", "eefq_rg")]
+  }
+  
   return(eefq)
   
 }
@@ -562,3 +606,165 @@ calculate_itn <- function(data) {
   return(data)
 }
 
+
+#' @title Process 24m SDQ Survey Data
+#' @description This function will download and return the sum scores for the SDQ subscales.
+#' @param token Unique REDCap token ID
+#' @param timestamp Boolean for whether to include survey timestamp
+#' @return A data frame for the completed surveys
+#' @export
+get_orca_sdq <- function(token, timestamp=T) {
+  sdq = get_orca_data(token, "strengths_and_difficulties_questionnaire")
+  sdq$record_id = str_remove(sdq$record_id, "^0+")
+  
+  reverse <- c("sdq7", "sdq25", "sdq21", "sdq11", "sdq14")
+  sdq[reverse] <- lapply(sdq[reverse], function(x) 3 - x)
+  
+  emo <- c("sdq3", 'sdq8', 'sdq13', 'sdq16', 'sdq24')
+  cp <-  c("sdq5", 'sdq7', 'sdq12', 'sdq18', 'sdq22')
+  hyp <-  c("sdq2", 'sdq10', 'sdq15', 'sdq21', 'sdq25')
+  pp <-  c("sdq6", 'sdq11', 'sdq14', 'sdq19', 'sdq23')
+  pro <-  c("sdq1", 'sdq4', 'sdq9', 'sdq17', 'sdq20')
+  ext <- c(cp, hyp)
+  int <- c(emo, pp)
+  total = c(ext, int)
+  sdq$sdq_emo <- rowSums(sdq[, emo], na.rm=T)
+  sdq$sdq_cp <- rowSums(sdq[, cp], na.rm=T)
+  sdq$sdq_hyp <- rowSums(sdq[, hyp], na.rm=T)
+  sdq$sdq_pp <- rowSums(sdq[, pp], na.rm=T)
+  sdq$sdq_pro <- rowSums(sdq[, pro], na.rm=T)
+  sdq$sdq_ext <- rowSums(sdq[, ext], na.rm=T)
+  sdq$sdq_int <- rowSums(sdq[, int], na.rm=T)
+  sdq$sdq_total <- rowSums(sdq[, total], na.rm=T)
+  
+  if (timestamp) {
+    sdq <- dplyr::select(sdq, record_id, strengths_and_difficulties_questionnaire_timestamp, sdq_emo:sdq_total)
+  } else if (!timestamp) {
+    sdq <- dplyr::select(sdq, record_id, sdq_emo:sdq_total)
+  }
+  
+  return(sdq)
+  
+}
+
+#' @title Process 24m MCHAT Survey Data
+#' @description This function will download and return the sum score for the MCHAT.
+#' @param token Unique REDCap token ID
+#' @param timestamp Boolean for whether to include survey timestamp
+#' @return A data frame for the completed surveys
+#' @export
+get_orca_mchat <- function(token, timestamp = T) {
+  mchat = get_orca_data(token, "mchat")
+  mchat$record_id = str_remove(mchat$record_id, "^0+")
+  reverse <- c("mchat2", "mchat5", "mchat12")
+  mchat[reverse] <- lapply(mchat[reverse], function(x) 1 - x)
+  
+  mchat[,5:24] <- lapply(mchat[,5:24], function(x) 1 - x)
+  
+  mchat$mchat_score = rowSums(mchat[,5:24])
+  
+  if (timestamp) {
+    mchat <- dplyr::select(mchat, record_id, mchat_timestamp, mchat_score)
+  } else if (!timestamp) {
+    mchat <- dplyr::select(mchat, record_id, mchat_score)
+  }
+  
+  return(mchat)
+}
+
+#' @title Process 24m BITSEA Survey Data
+#' @description This function will download and return the sum scores for the MCHAT subscales and threshold information.
+#' @param token Unique REDCap token ID
+#' @param timestamp Boolean for whether to include survey timestamp
+#' @return A data frame for the completed surveys
+#' @export
+get_orca_bitsea <- function(token, timestamp=T) {
+  bitsea = get_orca_data(token, "bitsea")
+  bitsea$record_id = str_remove(bitsea$record_id, "^0+")
+  
+  bitsea$autism_competence  = rowSums(bitsea[,c("bitsea_1", "bitsea_10", "bitsea_13", "bitsea_15",
+                                                "bitsea_22", "bitsea_25", "bitsea_29", "bitsea_31")], na.rm=T)
+  bitsea$autism_problems = rowSums(bitsea[,c("bitsea_9", "bitsea_14", "bitsea_21", "bitsea_35",
+                                             "bitsea_36", "bitsea_37", "bitsea_38", "bitsea_39",
+                                             "bitsea_40")], na.rm=T)
+  bitsea$autism_total = bitsea$autism_problems - bitsea$autism_competence
+  bitsea$problems = rowSums(bitsea[,c("bitsea_2", "bitsea_3", "bitsea_4", "bitsea_6", "bitsea_7", "bitsea_8",
+                                      "bitsea_9", "bitsea_11", "bitsea_12", "bitsea_14", "bitsea_16", "bitsea_17",
+                                      "bitsea_18", "bitsea_21", "bitsea_23", "bitsea_24", "bitsea_26", "bitsea_27",
+                                      "bitsea_28", "bitsea_30", "bitsea_32", "bitsea_33", "bitsea_34", "bitsea_35",
+                                      "bitsea_36", "bitsea_37", "bitsea_38", "bitsea_39", "bitsea_40",
+                                      "bitsea_41", "bitsea_42")], na.rm=T)
+  bitsea$competence = rowSums(bitsea[,c("bitsea_1", "bitsea_5", "bitsea_10", "bitsea_13", "bitsea_15",
+                                        "bitsea_19", "bitsea_20", "bitsea_22", "bitsea_25", "bitsea_29", "bitsea_31")], na.rm=T)
+  
+  if (timestamp) {
+    bitsea = bitsea[,c("record_id", "bitsea_timestamp","autism_competence", "autism_problems", "autism_total", "competence", "problems")]
+  } else if (!timestamp) {
+    bitsea = bitsea[,c("record_id","autism_competence", "autism_problems", "autism_total", "competence", "problems")]
+  }
+  bitsea$problem_thres = 0
+  bitsea[bitsea$problems > 11,"problem_thres"] = 1
+  bitsea$competence_thres = 0
+  bitsea[bitsea$competence < 13,"competence_thres"] = 1
+  bitsea$autism_total_thresh = 0
+  bitsea[bitsea$autism_total > 7,"autism_total_thresh"] = 1
+  bitsea$autism_comp_thresh = 0
+  bitsea[bitsea$competence < 12,"autism_comp_thresh"] = 1
+  bitsea$autism_prob_thresh = 0
+  bitsea[bitsea$autism_problems > 4,"autism_prob_thresh"] = 1
+  
+  
+  
+  return(bitsea)
+  
+}
+
+#' @title Process Stress Ratings Data
+#' @description This function will download and return relevant fields from stress ratings, filtered by timepoint
+#' @param token Unique REDCap token ID
+#' @param timepoint redcap event name for timepoint
+#' @param timestamp Boolean for whether to include survey timestamp
+#' @return A data frame for the completed surveys
+#' @export
+get_orca_stress_ratings <- function(token, timepoint = 'orca_visit_1_arm_1', timestamp=T) {
+  library(dplyr)
+  sr <- get_orca_data(token, form='stress_ratings')
+  
+  sr <- sr %>%
+    filter(redcap_event_name == timepoint)
+  
+  if (timestamp) {
+    sr <- select(sr, record_id, stress_ratings_timestamp, ratings_stress_3, stress_rating)
+  } else if (!timestamp) {
+    sr <- select(sr, record_id, ratings_stress_3, stress_rating)
+  }
+  
+  return(sr)
+  
+}
+
+#' @title Process Family Routines Data
+#' @description This function will download and return relevant fields from family routines, filtered by timepoint
+#' @param token Unique REDCap token ID
+#' @param timepoint redcap event name for timepoint
+#' @param timestamp Boolean for whether to include survey timestamp
+#' @return A data frame for the completed surveys
+#' @export
+get_orca_family_routines <- function(token, timepoint = 'orca_visit_1_arm_1', timestamp = T) {
+  library(dplyr)
+  
+  fr <- get_orca_data(token, form='family_routines')
+  
+  fr <- fr %>%
+    filter(redcap_event_name == timepoint) 
+  
+  
+  if (timestamp) {
+    fr <- select(fr, record_id, family_routines_timestamp, routines_bedtime:routines_examples)
+  } else if (!timestamp) {
+    fr <- select(fr, record_id, routines_bedtime:routines_examples)
+  }
+  
+  return(fr)
+  
+}
