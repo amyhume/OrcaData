@@ -42,6 +42,7 @@ get_orca_data <- function(token = token, form = form, raw_v_label = 'raw', form_
   df[df == 999] = NA
   df[df == 9999] = NA # NOTE values can be changed, or new ones added, to account for different missing data flags
   df <- dplyr::filter(df, !stringr::str_detect(record_id, "TEST"))
+  df <- dplyr::filter(df, !stringr::str_detect(record_id, "IRB"))
   return (df)
 }
 
