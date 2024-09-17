@@ -680,6 +680,7 @@ get_orca_mchat <- function(token, timestamp = T) {
 #' @return A data frame for the completed surveys
 #' @export
 get_orca_bitsea <- function(token, timestamp=T) {
+  library(stringr)
   bitsea = get_orca_data(token, "bitsea")
   bitsea$record_id = str_remove(bitsea$record_id, "^0+")
   
