@@ -230,7 +230,7 @@ get_orca_social_support <- function(token, timepoint = 'orca_visit_1_arm_1', tim
   ss <- dplyr::filter(ss, redcap_event_name == timepoint)
   ss_columns <- dplyr::select(ss, support3:support10)
   ss$social_support <- rowSums(ss_columns, na.rm=T)
-  ss <- dplyr::select(ss, record_id, social_support)
+  ss <- dplyr::select(ss, record_id,social_support_timestamp, social_support)
   
   if (timestamp) {
     ss <- dplyr::select(ss, record_id, social_support_timestamp, social_support)
