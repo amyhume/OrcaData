@@ -15,5 +15,5 @@ get_orca_bitsea(token, timestamp = T)
 A data frame for the completed surveys
 }
 \description{
-This function will download and return the sum scores for the MCHAT subscales and threshold information.
+This function will download and return the sum scores for the bitsea subscales and threshold information.
 }

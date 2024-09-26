@@ -674,7 +674,7 @@ get_orca_mchat <- function(token, timestamp = T) {
 }
 
 #' @title Process 24m BITSEA Survey Data
-#' @description This function will download and return the sum scores for the MCHAT subscales and threshold information.
+#' @description This function will download and return the sum scores for the bitsea subscales and threshold information.
 #' @param token Unique REDCap token ID
 #' @param timestamp Boolean for whether to include survey timestamp
 #' @return A data frame for the completed surveys
@@ -769,4 +769,144 @@ get_orca_family_routines <- function(token, timepoint = 'orca_visit_1_arm_1', ti
   
   return(fr)
   
+}
+
+#' @title Pull ORCA Data
+#' @description pulls all records & survey responses for ORCA 1.0
+#' @param token Unique REDCap API token
+#' @return A data frame with all records, survey responses & events
+#' @export
+get_all_data <- function(token) {
+  formData <- list("token"=token,
+                   content='record',
+                   action='export',
+                   format='csv',
+                   type='flat',
+                   csvDelimiter='',
+                   rawOrLabel='raw',
+                   rawOrLabelHeaders='raw',
+                   exportCheckboxLabel='false',
+                   exportSurveyFields='false',
+                   exportDataAccessGroups='false',
+                   returnFormat='json'
+  )
+  response <- httr::POST(url, body = formData, encode = "form")
+  result <- httr::content(response)
+  return(result)
+}
+
+
+#' @title Import data to ORCA 1.0
+#' @description Imports the fields in a dataframe to the corresponding record IDS to redcap
+#' @param token Unique REDCap API token
+#' @param data the data frame you wish to import. Column names must match fields
+#' @return A summary of data to be imported/overwritten and requires user input (y) to continue with import
+#' @export
+import_data <- function(token, data = data) {
+  library(redcapAPI)
+  unique_events <- unique(data$redcap_event_name)
+  
+  #pulling existing redcap data
+  all <- get_all_data(token)
+  all <- filter(all, redcap_event_name == unique_events)
+  all <- all[, colnames(all) %in% colnames(data)]
+  
+  columns <- colnames(all)[!str_detect(colnames(all), 'record_id') & !str_detect(colnames(all), 'redcap_event_name')]
+  
+  test <- all %>%
+    right_join(data, by=c('record_id', 'redcap_event_name'))
+  
+  #checking columns with conflicts
+  conflicts_for <- as.character()
+  
+  for (column in columns) {
+    column_data <- dplyr::select(test, record_id, redcap_event_name, paste0(column, '.x'), paste0(column, '.y'))
+    column_data <- dplyr::filter(column_data, !is.na(column_data[3]) & !is.na(column_data[4]))
+    
+    #prints rows with conflicts that will be overwritten
+    if (nrow(column_data) >= 1) {
+      print(paste0('conflict found for field: ', column))
+      print.data.frame(column_data)
+      cat("\n")
+      conflicts_for <- c(conflicts_for, column)
+    }
+    
+  }
+  
+  #ask user to check above conflicts and respond 'y'/'n' to import
+  if (length(conflicts_for) >= 1) {
+    cat("Check the datasets above carefully. columns x represent the existing data contents, column y represents the data that will overwrite\n",
+        "If column x contains data, this import will OVERWRITE that existing data\n",
+        "If the cell contents are the same, there is no new data to import")
+  } else {
+    print('no conflicts found. No datasets will be overwritten')
+    
+    print(data) ; cat("check the import data carefully")
+  }
+  
+  
+  response <- readline(prompt = "Do you want to continue? (y/n): ")
+  
+  #data import if participant responds y
+  if (tolower(response) == 'y') {
+    conn <- redcapConnection(url = url, token = token)
+    import_status <- importRecords(conn, data = data)
+    print(paste0("Data import completed for ", import_status, " records"))
+  } else {
+    print("Data import terminated.")
+  }
+}
+
+#' @title Process 24m ECBQ Survey Data
+#' @description This function will download and return the mean scores for the ECBQ subscales.
+#' @param token Unique REDCap token ID
+#' @param timestamp Boolean for whether to include survey timestamp
+#' @return A data frame for the completed surveys for 24m
+#' @export
+get_orca_ecbq <- function(token, timestamp=T) {
+  library(dplyr)
+  
+  ecbq <- get_orca_data(token, form='early_childhood_behavior_questionnaire_ecbq')
+  
+  #reverse scoring items 12,14,34
+  ecbq$ecbq12 <- 8-ecbq$ecbq12
+  ecbq$ecbq14 <- 8-ecbq$ecbq14
+  ecbq$ecbq34 <- 8-ecbq$ecbq34
+  
+  neg_items <- c('ecbq16', 'ecbq17', 'ecbq19', 'ecbq32', 'ecbq2', 'ecbq26', 'ecbq10', 'ecbq22', 'ecbq23', 'ecbq1', 'ecbq33', 'ecbq34')
+  sur_items <- c('ecbq4', 'ecbq13', 'ecbq18', 'ecbq20', 'ecbq24', 'ecbq6', 'ecbq11', 'ecbq9', 'ecbq25', 'ecbq3', 'ecbq30', 'ecbq36')
+  ec_items <- c('ecbq21', 'ecbq27', 'ecbq31','ecbq8', 'ecbq15', 'ecbq35', 'ecbq7', 'ecbq14', 'ecbq12', 'ecbq29', 'ecbq5', 'ecbq28')
+  
+  ecbq$neg <- rowMeans(ecbq[, neg_items], na.rm=T)
+  ecbq$sur <- rowMeans(ecbq[, sur_items], na.rm=T)
+  ecbq$ec <- rowMeans(ecbq[, ec_items], na.rm=T)
+  
+  if (timestamp) {
+    ecbq <- select(ecbq, record_id, early_childhood_behavior_questionnaire_ecbq_timestamp, neg, sur, ec)
+  } else if (!timestamp) {
+    ecbq <- select(ecbq, record_id, neg, sur, ec)
+  }
+  
+  return(ecbq)
+}
+
+#' @title Process 24m CBCL Subset Survey Data
+#' @description This function will download and return the sum scores for the 5-item CBCL subset.
+#' @param token Unique REDCap token ID
+#' @param timestamp Boolean for whether to include survey timestamp
+#' @return A data frame for the completed surveys for 24m
+#' @export
+get_orca_cbcl <- function(token, timestamp=T) {
+  library(dplyr)
+  cbcl <- get_orca_data(token, form='cbcl_subset')
+  
+  cbcl$cbcl_score <- rowSums(cbcl[, c('cbcl1', 'cbcl2', 'cbcl3', 'cbcl4', 'cbcl5')], na.rm=T)
+  
+  if (timestamp) {
+    cbcl <- select(cbcl, record_id, cbcl_subset_timestamp, cbcl_score)
+  } else if (!timestamp) {
+    cbcl <- select(cbcl, record_id, cbcl_score)
+  }
+  
+  return(cbcl)
 }
