@@ -43,6 +43,7 @@ get_orca_data <- function(token = token, form = form, raw_v_label = 'raw', form_
   df[df == 9999] = NA # NOTE values can be changed, or new ones added, to account for different missing data flags
   df <- dplyr::filter(df, !stringr::str_detect(record_id, "TEST"))
   df <- dplyr::filter(df, !stringr::str_detect(record_id, "IRB"))
+  df$record_id <- sub("^0+", "", df$record_id)
   return (df)
 }
 
@@ -80,6 +81,7 @@ get_orca_field <- function(token = token, field=field, raw_v_label = 'raw') {
   df <- dplyr::select(df, record_id, redcap_event_name, field)
   df <- df[!is.na(df[[field]]),]
   df <- dplyr::filter(df, !stringr::str_detect(record_id, "TEST"))
+  df$record_id <- sub("^0+", "", df$record_id)
   return (df)
 }
 
