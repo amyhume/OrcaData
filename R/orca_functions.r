@@ -657,6 +657,7 @@ get_orca_sdq <- function(token, timestamp=T) {
 #' @return A data frame for the completed surveys
 #' @export
 get_orca_mchat <- function(token, timestamp = T) {
+  library(tidyverse)
   mchat = get_orca_data(token, "mchat")
   mchat$record_id = str_remove(mchat$record_id, "^0+")
   reverse <- c("mchat2", "mchat5", "mchat12")
